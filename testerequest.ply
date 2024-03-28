@@ -1,0 +1,4 @@
+testerequest:
+  url: localhost:8080/pessoa
+  method: GET
+  headers: {}
