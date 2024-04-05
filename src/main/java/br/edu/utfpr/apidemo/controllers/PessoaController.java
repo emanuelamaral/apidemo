@@ -1,6 +1,8 @@
 package br.edu.utfpr.apidemo.controllers;
 
 
+import java.util.List;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +16,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import br.edu.utfpr.apidemo.dto.PessoaDTO;
+import br.edu.utfpr.apidemo.exceptions.NotFoundException;
+import br.edu.utfpr.apidemo.model.Pessoa;
 import br.edu.utfpr.apidemo.service.PessoaService;
 
 @RestController
@@ -24,15 +28,6 @@ public class PessoaController {
     @Autowired
     private PessoaService pessoaService;
 
-    @GetMapping("/{id}")
-    public String get(@PathVariable("id") String id) {
-        return "Devolvendo pessoa " + id;
-    }
-    @GetMapping
-    public String getAll() {
-        return "todas as pessoas";
-    }
-
     @PostMapping
     public ResponseEntity<Object> create(@RequestBody PessoaDTO dto) {
         try {
@@ -42,14 +37,42 @@ public class PessoaController {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
     }
-    
-    @PutMapping("/{id}")
-    public String update(@PathVariable("id") String id) {
-        return "Atualizar pessoa" + id;
+
+    @GetMapping
+    public List<Pessoa> getAll() {
+        return pessoaService.getAll();
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<Object> getById(@PathVariable("id") long id) {
+        var person = pessoaService.getById(id);
+        return person.isPresent()
+            ? ResponseEntity.ok().body(person.get())
+            : ResponseEntity.notFound().build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Object> update(@PathVariable("id") long id, @RequestBody PessoaDTO dto) {
+        try {
+            return ResponseEntity.ok().body(pessoaService.update(id, dto));
+        } catch (NotFoundException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
+    }   
+
     @DeleteMapping("/{id}")
-    public String delete(@PathVariable("id") String id) {
-        return "deletar pessoa" + id;
+    public ResponseEntity<Object> delete(@PathVariable("id") long id) {
+        try {
+            pessoaService.delete(id);
+            return ResponseEntity.ok().build();
+        } catch (NotFoundException e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+        }
     }
 }
